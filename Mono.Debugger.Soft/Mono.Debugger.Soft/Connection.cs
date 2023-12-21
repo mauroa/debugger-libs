@@ -3030,15 +3030,23 @@ namespace Mono.Debugger.Soft
 				return socket.RemoteEndPoint;
 			}
 		}
-		
+
 		protected override int TransportSend (byte[] buf, int buf_offset, int len)
 		{
-			return socket.Send (buf, buf_offset, len, SocketFlags.None);
+			var sent = socket.Send (buf, buf_offset, len, SocketFlags.None);
+
+			File.AppendAllText (GetTestLogFilePath(), $"\n[TEST] - Wrote {sent} bytes from the Mono debug server to the device");
+
+			return sent;
 		}
 		
 		protected override int TransportReceive (byte[] buf, int buf_offset, int len)
 		{
-			return socket.Receive (buf, buf_offset, len, SocketFlags.None);
+			var received = socket.Receive (buf, buf_offset, len, SocketFlags.None);
+
+			File.AppendAllText(GetTestLogFilePath(), $"\n[TEST] - Received {received} bytes from the Mono runtime in the device");
+
+			return received;
 		}
 		
 		protected override void TransportSetTimeouts (int send_timeout, int receive_timeout)
@@ -3055,6 +3063,13 @@ namespace Mono.Debugger.Soft
 		protected override void TransportShutdown ()
 		{
 			socket.Shutdown (SocketShutdown.Both);
+		}
+
+		string GetTestLogFilePath()
+		{
+			var processId = Process.GetCurrentProcess().Id.ToString();
+
+			return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Xamarin", "Logs", "Debugger", $"TestLog-{processId}.txt");
 		}
 	}
 
